@@ -46,9 +46,31 @@ async function run() {
       res.send(result);
     });
 
+    app.put("/places/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedPlace = req.body;
+      const place = {
+        $set: {
+          image: updatedPlace.image,
+          tourists_spot_name: updatedPlace.tourists_spot_name,
+          country: updatedPlace.country,
+          location: updatedPlace.location,
+          short_description: updatedPlace.short_description,
+          seasonality: updatedPlace.seasonality,
+          average_cost: updatedPlace.average_cost,
+          travel_time: updatedPlace.travel_time,
+          totaVisitorsPerYear: updatedPlace.totaVisitorsPerYear,
+        },
+      };
+      const result = await placeCollection.updateOne(filter, place, options);
+      res.send(result);
+    });
+
     app.delete("/places/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId() };
+      const query = { _id: new ObjectId(id) };
       const result = await placeCollection.deleteOne(query);
       res.send(result);
     });
