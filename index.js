@@ -3,7 +3,7 @@ const cors = require("cors");
 const port = process.env.PORT || 5000;
 const app = express();
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // Middleware
 app.use(cors());
@@ -26,16 +26,30 @@ async function run() {
 
     const placeCollection = client.db("AdventureAxisDB").collection("place");
 
-    app.get('/places', async(req, res) =>{
-        const cursor = placeCollection.find()
-        const result = await cursor.toArray()
-        res.send(result)
-    })
+    app.get("/places", async (req, res) => {
+      const cursor = placeCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/places/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId() };
+      const result = await placeCollection.findOne();
+      res.send(result);
+    });
 
     app.post("/places", async (req, res) => {
       const addPlace = req.body;
       console.log(addPlace);
       const result = await placeCollection.insertOne(addPlace);
+      res.send(result);
+    });
+
+    app.delete("/places/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId() };
+      const result = await placeCollection.deleteOne(query);
       res.send(result);
     });
     await client.db("admin").command({ ping: 1 });
