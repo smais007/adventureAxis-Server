@@ -26,6 +26,16 @@ async function run() {
 
     const placeCollection = client.db("AdventureAxisDB").collection("place");
 
+    const countryCollection = client
+      .db("AdventureAxisDB")
+      .collection("country");
+
+    app.get("/country", async (req, res) => {
+      const cursor = countryCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
     app.get("/places", async (req, res) => {
       const cursor = placeCollection.find();
       const result = await cursor.toArray();
@@ -34,8 +44,17 @@ async function run() {
 
     app.get("/places/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId() };
+      const query = { _id: new ObjectId(id) };
       const result = await placeCollection.findOne();
+      res.send(result);
+    });
+
+    app.get("/details/:id", async (req, res) => {
+      const id = req.params.id;
+      //const query = { _id: new ObjectId(id) };
+      //const result = await placeCollection.findOne();
+      const result = await placeCollection.findOne({ _id: new ObjectId(id) });
+      console.log(result);
       res.send(result);
     });
 
@@ -46,8 +65,9 @@ async function run() {
       res.send(result);
     });
 
-    app.put("/places/:id", async (req, res) => {
+    app.put("/updatePlace/:id", async (req, res) => {
       const id = req.params.id;
+      console.log(id);
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updatedPlace = req.body;
@@ -56,6 +76,7 @@ async function run() {
           image: updatedPlace.image,
           tourists_spot_name: updatedPlace.tourists_spot_name,
           country: updatedPlace.country,
+          region: updatedPlace.region,
           location: updatedPlace.location,
           short_description: updatedPlace.short_description,
           seasonality: updatedPlace.seasonality,
@@ -64,8 +85,13 @@ async function run() {
           totaVisitorsPerYear: updatedPlace.totaVisitorsPerYear,
         },
       };
-      const result = await placeCollection.updateOne(filter, place, options);
-      res.send(result);
+      try {
+        const result = await placeCollection.updateOne(filter, place, options);
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating place:", error);
+        res.status(500).send("Error updating place.");
+      }
     });
 
     app.delete("/places/:id", async (req, res) => {
