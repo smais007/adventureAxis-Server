@@ -6,6 +6,11 @@ require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // Middleware
+const corsConfig = {
+  origin: ["http://localhost:5173"],
+  credentials: true,
+};
+app.use(cors(corsConfig));
 app.use(cors());
 app.use(express.json());
 
@@ -22,21 +27,37 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
-
+    // await client.connect();
     const placeCollection = client.db("AdventureAxisDB").collection("place");
-
     const countryCollection = client
       .db("AdventureAxisDB")
       .collection("country");
 
     app.get("/country", async (req, res) => {
-      const cursor = countryCollection.find();
-      const result = await cursor.toArray();
-      res.send(result);
+      try {
+        const cursor = countryCollection.find();
+        const result = await cursor.toArray();
+        res.json(result);
+      } catch (error) {
+        console.error("Error fetching:", error);
+        res.status(500).json({ error: "Server Error" });
+      }
     });
 
-    app.get("/places", async (req, res) => {
+    // Middleware to handle routes with query parameter
+    const queryMiddleware = async (req, res, next) => {
+      const country = req.query.country;
+      if (country) {
+        const cursor = placeCollection.find({ country });
+        const result = await cursor.toArray();
+        res.send(result);
+      } else {
+        next(); // Pass control to the next middleware/route
+      }
+    };
+
+    // Route for /places with query parameter
+    app.get("/places", queryMiddleware, async (req, res) => {
       const cursor = placeCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -71,6 +92,7 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updatedPlace = req.body;
+      console.log(updatedPlace);
       const place = {
         $set: {
           image: updatedPlace.image,
@@ -100,10 +122,11 @@ async function run() {
       const result = await placeCollection.deleteOne(query);
       res.send(result);
     });
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // await client.close();
   }
